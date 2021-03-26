@@ -507,7 +507,6 @@ describe("goToNextCell", () => {
                doc: docWithSimpleTable,
                selection: TextSelection.create(docWithSimpleTable, 16)
           });
-          console.log('here', TableMap.get(state.selection.$from.node(1)))
           const dispatch = (tr) => state = state.apply(tr);
           const commandResult = goToNextCell(1)(state, dispatch);
           ist(commandResult, true);
