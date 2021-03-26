@@ -1,9 +1,9 @@
 const ist = require("ist")
-const {EditorState} = require("prosemirror-state")
+const {EditorState, NodeSelection, TextSelection} = require("prosemirror-state")
 
-const {doc, table, tr, p, td, th, c, h, c11, h11, cEmpty, hEmpty, cCursor, hCursor, cHead, cAnchor, eq, selectionFor} = require("./build")
+const {doc, table, tr, p, td, th, c, h, c11, h11, cEmpty, hEmpty, cCursor, hCursor, cHead, cAnchor, eq, selectionFor, image} = require("./build")
 const {addColumnAfter, addColumnBefore, deleteColumn, addRowAfter, addRowBefore, deleteRow,
-       mergeCells, splitCell, splitCellWithType, setCellAttr, toggleHeader, toggleHeaderRow, toggleHeaderColumn} = require("../dist/")
+       mergeCells, splitCell, splitCellWithType, setCellAttr, toggleHeader, toggleHeaderRow, toggleHeaderColumn, goToNextCell} = require("../dist/")
 
 function test(doc, command, result) {
   let state = EditorState.create({doc, selection: selectionFor(doc)})
@@ -461,4 +461,56 @@ describe("toggleHeader", () => {
             toggleHeader("column", { useDeprecateLogic: false }),
             doc(table(tr(hCursor, h11), tr(c11, c11)))))
   })
+})
+
+describe("goToNextCell", () => {
+     const simpleTable = table(
+          tr(td({ colspan: 1, rowspan: 1 }, p('abc')), td({ colspan: 1, rowspan: 1 }, p('def'))),
+          tr(td({ colspan: 1, rowspan: 1 }, image({ src: "test" })), cEmpty),
+     );
+     const docWithSimpleTable = doc(simpleTable, p('x'));
+
+     it("returns false if selection is not in table", () => {
+          let state = EditorState.create({
+               doc: docWithSimpleTable,
+               selection: TextSelection.create(docWithSimpleTable, docWithSimpleTable.content.size - 1)
+          });
+          const dispatch = (tr) => state = state.apply(tr);
+          const commandResult = goToNextCell(1)(state, dispatch);
+          ist(commandResult, false);
+     })
+
+     it("returns true and moves forward one cell if selection is in table", () => {
+          let state = EditorState.create({
+               doc: docWithSimpleTable,
+               selection: TextSelection.create(docWithSimpleTable, 7)
+          });
+          const dispatch = (tr) => state = state.apply(tr);
+          const commandResult = goToNextCell(1)(state, dispatch);
+          ist(commandResult, true);
+          ist(state.selection.from, 14);
+     })
+
+     it("returns true and moves back one cell if selection is in table", () => {
+          let state = EditorState.create({
+               doc: docWithSimpleTable,
+               selection: TextSelection.create(docWithSimpleTable, 14)
+          });
+          const dispatch = (tr) => state = state.apply(tr);
+          const commandResult = goToNextCell(-1)(state, dispatch);
+          ist(commandResult, true);
+          ist(state.selection.from, 7);
+     })
+
+     it("returns true and moves forward one cell if selection is in table, atom node", () => {
+          let state = EditorState.create({
+               doc: docWithSimpleTable,
+               selection: TextSelection.create(docWithSimpleTable, 16)
+          });
+          console.log('here', TableMap.get(state.selection.$from.node(1)))
+          const dispatch = (tr) => state = state.apply(tr);
+          const commandResult = goToNextCell(1)(state, dispatch);
+          ist(commandResult, true);
+          ist(state.selection.from, 19);
+     })
 })

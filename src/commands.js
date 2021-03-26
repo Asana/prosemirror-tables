@@ -1,6 +1,6 @@
 // This file defines a number of table-related commands.
 
-import {TextSelection} from "prosemirror-state"
+import {TextSelection, NodeSelection} from "prosemirror-state"
 import {Fragment} from "prosemirror-model"
 
 import {Rect, TableMap} from "./tablemap"
@@ -474,8 +474,20 @@ export function goToNextCell(direction) {
     let cell = findNextCell(selectionCell(state), direction)
     if (cell == null) return
     if (dispatch) {
-      let $cell = state.doc.resolve(cell)
-      dispatch(state.tr.setSelection(TextSelection.between($cell, moveCellForward($cell))).scrollIntoView())
+      if (dispatch) {
+        const cellNode = state.doc.nodeAt(cell)
+        const cellLastChild = cellNode.lastChild
+        if (cellLastChild == null) return
+        const isLastNodeAtomNode = cellLastChild.type.isAtom
+        const cellContentEndPos = cell + cellNode.nodeSize - 2
+        dispatch(
+          state.tr.setSelection(
+            isLastNodeAtomNode
+              ? NodeSelection.create(state.doc, cellContentEndPos)
+              : TextSelection.create(state.doc, cellContentEndPos)
+          ).scrollIntoView()
+        )
+      }
     }
     return true
   }
