@@ -472,22 +472,20 @@ export function goToNextCell(direction) {
   return function(state, dispatch) {
     if (!isInTable(state)) return false
     let cell = findNextCell(selectionCell(state), direction)
-    if (cell == null) return
+    if (cell == null) return false
     if (dispatch) {
-      if (dispatch) {
-        const cellNode = state.doc.nodeAt(cell)
-        const cellLastChild = cellNode.lastChild
-        if (cellLastChild == null) return
-        const isLastNodeAtomNode = cellLastChild.type.isAtom
-        const cellContentEndPos = cell + cellNode.nodeSize - 2
-        dispatch(
-          state.tr.setSelection(
-            isLastNodeAtomNode
-              ? NodeSelection.create(state.doc, cellContentEndPos)
-              : TextSelection.create(state.doc, cellContentEndPos)
-          ).scrollIntoView()
-        )
-      }
+      const cellNode = state.doc.nodeAt(cell)
+      const cellLastChild = cellNode.lastChild
+      if (cellLastChild == null) return false
+      const isLastNodeAtomNode = cellLastChild.type.isAtom
+      const cellContentEndPos = cell + cellNode.nodeSize - 2
+      dispatch(
+        state.tr.setSelection(
+          isLastNodeAtomNode
+            ? NodeSelection.create(state.doc, cellContentEndPos)
+            : TextSelection.create(state.doc, cellContentEndPos)
+        ).scrollIntoView()
+      )
     }
     return true
   }
